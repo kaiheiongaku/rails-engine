@@ -8,16 +8,16 @@ describe 'Merchants API' do
 
     expect(response).to be_successful
 
-    merchants = JSON.parse(response.body, symbolize_names: true)
+    merchants = JSON.parse(response.body, symbolize_names: true)[:data]
 
     expect(merchants.count).to eq(6)
 
     merchants.each do |merchant|
       expect(merchant).to have_key(:id)
-      expect(merchant[:id]).to be_an(Integer)
+      expect(merchant[:id]).to be_an(String)
 
-      expect(merchant).to have_key(:name)
-      expect(merchant[:name]).to be_a(String)
+      expect(merchant[:attributes]).to have_key(:name)
+      expect(merchant[:attributes][:name]).to be_a(String)
     end
   end
 
@@ -28,47 +28,59 @@ describe 'Merchants API' do
 
       get '/api/v1/merchants'
 
-      first_page_of_merchants = JSON.parse(response.body, symbolize_names: true)
+      first_page_of_merchants = JSON.parse(response.body, symbolize_names: true)[:data]
 
       expect(first_page_of_merchants.count).to eq(20)
       expect(Merchant.all.count).to eq(50)
-      expect(first_page_of_merchants).to include(Merchant.all.min_by { |m| m.id})
+      expect(first_page_of_merchants.first[:id].to_i).to eq((Merchant.all.min_by { |m| m.id}).id)
     end
 
-    it 'can take parameters related to number of merchants per page and return with a default of 1 page' do
+    it 'can take parameters related to number of merchants per page and return page 1 by default' do
       create_list(:merchant, 50)
 
-      get '/api/v1/merchants?per_page=10'
+      get '/api/v1/merchants?per_page=5'
 
-      first_page_of_merchants = JSON.parse(response.body, symbolize_names: true)
+      first_page_of_merchants = JSON.parse(response.body, symbolize_names: true)[:data]
 
-      expect(first_page_of_merchants.count).to eq(10)
+      expect(first_page_of_merchants.count).to eq(5)
       expect(Merchant.all.count).to eq(50)
-      expect(first_page_of_merchants).to include(Merchant.all.min_by { |m| m.id})
+      expect(first_page_of_merchants.first[:id].to_i).to eq((Merchant.first.id))
     end
 
     it 'can return a default of 20 merchants on a specified page' do
       create_list(:merchant, 50)
 
+      get '/api/v1/merchants?page=2'
+
+      last_page_of_merchants = JSON.parse(response.body, symbolize_names: true)[:data]
+
+      expect(last_page_of_merchants.count).to eq(20)
+      expect(Merchant.all.count).to eq(50)
+      expect(last_page_of_merchants.first[:id].to_i).to eq((Merchant.all.min_by { |m| m.id}).id + 20)
+    end
+
+    it 'can return a page with a number of results less than the per_page' do
+      create_list(:merchant, 50)
+
       get '/api/v1/merchants?page=3'
 
-      last_page_of_merchants = JSON.parse(response.body, symbolize_names: true)
+      last_page_of_merchants = JSON.parse(response.body, symbolize_names: true)[:data]
 
       expect(last_page_of_merchants.count).to eq(10)
       expect(Merchant.all.count).to eq(50)
-      expect(last_page_of_merchants).to include(Merchant.all.max_by { |m| m.id})
+      expect(last_page_of_merchants.last[:id].to_i).to eq((Merchant.all.max_by { |m| m.id}).id)
     end
 
     it 'can return a specified number per page and go to the specified page' do
       create_list(:merchant, 50)
 
-      get '/api/v1/merchants?per_page=5?page=3'
+      get '/api/v1/merchants?per_page=5&page=3'
 
-      third_page_of_merchants = JSON.parse(response.body, symbolize_names: true)
+      third_page_of_merchants = JSON.parse(response.body, symbolize_names: true)[:data]
 
       expect(third_page_of_merchants.count).to eq(5)
-      expect(Merchant.all).to eq(50)
-      expect(third_page_of_merchants).to include((Merchant.all.min_by { |m| m.id}).id + 12) })
+      expect(Merchant.all.count).to eq(50)
+      expect(third_page_of_merchants.first[:id].to_i).to eq((Merchant.all.min_by { |m| m.id}).id + 10)
     end
   end
 
