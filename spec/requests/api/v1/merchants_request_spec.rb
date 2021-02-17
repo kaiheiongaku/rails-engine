@@ -68,7 +68,7 @@ describe 'Merchants API' do
 
       expect(third_page_of_merchants.count).to eq(5)
       expect(Merchant.all).to eq(50)
-      # expect(third_page_of_merchants).to include((Merchant.all.min_by { |m| m.id}).id + 12) })
+      expect(third_page_of_merchants).to include((Merchant.all.min_by { |m| m.id}).id + 12) })
     end
   end
 
