@@ -99,4 +99,37 @@ describe 'Merchants API' do
     expect(merchant).to have_key(:name)
     expect(merchant[:name]).to be_a(String)
   end
+
+  describe 'search merchants' do
+    before :each do
+      @merchant = Merchant.create(name: "Turing")
+      @merchant2 = Merchant.create(name: "Rings of Gold")
+      @merchant3 = Merchant.create(name: "Silverings")
+      @merchant4 = Merchant.create(name: "Tail-o-Ring")
+    end
+
+    it 'can return one merchant who most closely matches the params in case sensitive alphabetical order (upper case)' do
+
+      get "/api/v1/merchants/find_one?name=Ring"
+
+      expect(response).to be_successful
+
+      search_result = JSON.parse(response.body, symbolize_names: true)[:data]
+
+      expect(search_result[:attributes][:name]).to eq(@merchant2.name)
+      expect(search_result[:id].to_i).to eq(@merchant2.id)
+    end
+
+    it 'can return one merchant who most closely matches the params in case sensitive alphabetical order (upper case)' do
+
+      get "/api/v1/merchants/find_one?name=ring"
+
+      expect(response).to be_successful
+
+      search_result = JSON.parse(response.body, symbolize_names: true)[:data]
+
+      expect(search_result[:attributes][:name]).to eq(@merchant3.name)
+      expect(search_result[:id].to_i).to eq(@merchant3.id)
+    end
+  end
 end
