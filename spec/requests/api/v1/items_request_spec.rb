@@ -161,4 +161,70 @@ describe 'Items API' do
     expect(Item.count).to eq(0)
     expect{Item.find(item.id)}.to raise_error(ActiveRecord::RecordNotFound)
   end
+
+  describe 'item search' do
+    before :each do
+      @merchant = Merchant.create!(name: "Theodore Franklin and Sons")
+      @item1 = Item.create!(name: "Turing", description: "Terribly Terrific", unit_price: 4.99, merchant_id: @merchant.id)
+      @item2 = Item.create!(name: "Rings Ding Ding", description: 'Awww', unit_price: 5.25, merchant_id: @merchant.id)
+      @item3 = Item.create!(name: "Aring", description: 'Uhhh', unit_price: 3.99, merchant_id: @merchant.id)
+      @item4 = Item.create!(name: "Sliverings", description: 'Unsure', unit_price: 10.99, merchant_id: @merchant.id)
+    end
+
+    it 'can return items that most closely match the params in case sensitive alphabetical order (upper case)' do
+
+      get "/api/v1/items/find_all?name=Ring"
+
+      expect(response).to be_successful
+
+      search_result = JSON.parse(response.body, symbolize_names: true)[:data]
+
+      expect(search_result.map {|m| m[:attributes][:name] }).to eq([@item2.name])
+    end
+
+    it 'can return items that most closely match the params in case sensitive alphabetical order (lower case)' do
+
+      get "/api/v1/items/find_all?name=ring"
+
+      expect(response).to be_successful
+
+      search_result = JSON.parse(response.body, symbolize_names: true)[:data]
+
+      expect(search_result.map { |m| m[:attributes][:name] }).to eq([@item3.name, @item4.name, @item1.name])
+    end
+
+    it 'can return items that are above a minimum price' do
+      get "/api/v1/items/find_all?min_price=5.00"
+
+      expect(response).to be_successful
+
+      search_result = JSON.parse(response.body, symbolize_names: true)[:data]
+
+      expect(search_result.map { |m| m[:attributes][:name] }).to eq([@item2.name, @item4.name])
+    end
+
+    it 'can return items below a maximum price' do
+      get "/api/v1/items/find_all?max_price=5.00"
+
+      expect(response).to be_successful
+
+      search_result = JSON.parse(response.body, symbolize_names: true)[:data]
+
+      expect(search_result.map { |m| m[:attributes][:name] }).to eq([@item1.name, @item3.name])
+    end
+
+    it 'can return items within a range' do
+      get "/api/v1/items/find_all?min_price=4.00&max_price=6.00"
+
+      expect(response).to be_successful
+
+      search_result = JSON.parse(response.body, symbolize_names: true)[:data]
+
+      expect(search_result.map { |m| m[:attributes][:name] }).to eq([@item1.name, @item2.name])
+    end
+
+    it 'does not allow both name and price range in a search' do
+
+    end
+  end
 end
