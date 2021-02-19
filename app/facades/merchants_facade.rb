@@ -9,5 +9,9 @@ class MerchantsFacade
     def search(search_query)
       Merchant.where('name like ?', "%#{search_query}%").order('name ASC').first
     end
+
+    def richest_merchants(number_returned)
+      Merchant.richest_merchants(number_returned)
+    end
   end
 end
